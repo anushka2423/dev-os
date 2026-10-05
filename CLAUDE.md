@@ -3,13 +3,6 @@
 This project uses a structured, step-by-step workflow to go from a product idea to a fully built app. Three skills drive the process. Follow the stages in order and **never move to the next stage without explicit user approval**.
 
 ---
-
-## Core Rule: Always Wait for Approval
-
-After completing any stage, stop. Present what was produced. Ask the user if they are happy to proceed to the next stage. Do not move forward until they say yes.
-
----
-
 ## The Build Workflow
 
 ### Stage 1 — Engineering Plan
@@ -56,16 +49,11 @@ When done:
 
 ### Stage 4 — Feature Implementation
 **Input:** Spec files from `docs/specs/`
-**Process:** Build one feature at a time
+**Process:** Build all features end-to-end without stopping
 
-For each feature:
-1. Read the relevant spec file(s) from `docs/specs/`
-2. Tell the user which feature you are about to implement and what files will be created or changed
-3. Wait for their confirmation before writing any code
-4. Implement the feature
-5. Confirm it is done and ask which feature to build next
-
-> **Always apply `/design-system` when writing any frontend code.** All colors, spacing, typography, and component styles must come from the design system defined in `docs/design.md`.
+1. Read all relevant spec files from `docs/specs/`
+2. Implement every feature in sequence — do not stop or ask for confirmation between features
+3. Apply `/design-system` to all frontend code; all colors, spacing, typography, and component styles must come from `docs/design.md`
 
 When all features are implemented, ask:
 > "All features are implemented. Ready to move to Stage 5 — Testing?"
