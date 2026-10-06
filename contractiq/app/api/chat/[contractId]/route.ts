@@ -55,11 +55,20 @@ export const POST = withAuth(async (req: NextRequest, user, { params }) => {
     return NextResponse.json({ code: 'AI_UNAVAILABLE', message: 'AI service is temporarily unavailable. Please try again.' }, { status: 502 })
   }
 
+  const userMessageId = crypto.randomUUID()
   const messageId = crypto.randomUUID()
-  await supabase.from('chat_messages').insert([
-    { session_id: sessionId, user_id: user.id, role: 'user', content: message, page_citations: [] },
+  const { error: insertError } = await supabase.from('chat_messages').insert([
+    { id: userMessageId, session_id: sessionId, user_id: user.id, role: 'user', content: message, page_citations: [] },
     { id: messageId, session_id: sessionId, user_id: user.id, role: 'assistant', content: result.content, page_citations: result.pageCitations },
   ])
+
+  if (insertError) {
+    console.error('[chat] chat_messages insert failed:', insertError)
+    return NextResponse.json(
+      { code: 'SAVE_ERROR', message: `AI responded but message could not be saved: ${insertError.message}` },
+      { status: 500 }
+    )
+  }
 
   return NextResponse.json({
     message_id: messageId,

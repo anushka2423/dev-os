@@ -51,6 +51,7 @@ export const POST = withAuth(async (req: NextRequest, user, { params }) => {
   }
 
   const rows = keyTermResults.map((term) => ({
+    id: crypto.randomUUID(),
     contract_id: contractId,
     user_id: user.id,
     term_name: term.term_name,
@@ -62,7 +63,12 @@ export const POST = withAuth(async (req: NextRequest, user, { params }) => {
     is_edited: false,
   }))
 
-  await supabase.from('key_terms').insert(rows)
+  const { error: insertError } = await supabase.from('key_terms').insert(rows)
+  if (insertError) {
+    console.error('[process] key_terms insert failed:', insertError)
+    await supabase.from('contracts').update({ status: 'error' }).eq('id', contractId)
+    return NextResponse.json({ code: 'DB_ERROR', message: `Key terms could not be saved: ${insertError.message}` }, { status: 500 })
+  }
   await supabase.from('contracts').update({ status: 'processed' }).eq('id', contractId)
 
   const { data: inserted } = await supabase.from('key_terms').select('*').eq('contract_id', contractId)
