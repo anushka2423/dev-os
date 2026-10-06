@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware/auth'
-import { createAdminSupabaseClient, createServerSupabaseClient } from '@/lib/supabase/server'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 
-export const GET = withAuth(async (req: NextRequest, user, { params }: { params: { id: string } }) => {
+export const GET = withAuth(async (req: NextRequest, user, { params }) => {
   const contractId = params.id
-  const supabase = createServerSupabaseClient()
+  const supabase = await createServerSupabaseClient()
 
   const { data: contract, error } = await supabase
     .from('contracts')
@@ -26,7 +26,6 @@ export const GET = withAuth(async (req: NextRequest, user, { params }: { params:
     .order('page_number', { ascending: true })
 
   // Fetch or create chat session
-  const admin = createAdminSupabaseClient()
   let chatSessionId: string
 
   const { data: existingSession } = await supabase
@@ -38,7 +37,7 @@ export const GET = withAuth(async (req: NextRequest, user, { params }: { params:
   if (existingSession) {
     chatSessionId = existingSession.id
   } else {
-    const { data: newSession } = await admin
+    const { data: newSession } = await supabase
       .from('chat_sessions')
       .insert({ contract_id: contractId, user_id: user.id })
       .select('id')
@@ -49,7 +48,7 @@ export const GET = withAuth(async (req: NextRequest, user, { params }: { params:
   // Generate signed URL if file_path exists
   let signedUrl: string | null = null
   if (contract.file_path) {
-    const { data: urlData } = await admin.storage
+    const { data: urlData } = await supabase.storage
       .from('contracts')
       .createSignedUrl(contract.file_path, 3600)
     signedUrl = urlData?.signedUrl ?? null

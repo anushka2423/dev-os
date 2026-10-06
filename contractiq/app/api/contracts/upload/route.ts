@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware/auth'
 import { extractPdfText } from '@/lib/pdf/extractor'
-import { createAdminSupabaseClient } from '@/lib/supabase/server'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { STANDARD_TERMS } from '@/lib/openai/prompts'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
@@ -48,10 +48,10 @@ export const POST = withAuth(async (req: NextRequest, user) => {
     return NextResponse.json({ code: 'CONTRACT_TOO_LONG', message: 'Contract exceeds the 15,000-token limit.' }, { status: 422 })
   }
 
-  const admin = createAdminSupabaseClient()
+  const supabase = await createServerSupabaseClient()
   const contractId = crypto.randomUUID()
 
-  const { error: dbError } = await admin.from('contracts').insert({
+  const { error: dbError } = await supabase.from('contracts').insert({
     id: contractId,
     user_id: user.id,
     name: name.replace(/\.pdf$/i, '').slice(0, 200),
@@ -62,7 +62,8 @@ export const POST = withAuth(async (req: NextRequest, user) => {
   })
 
   if (dbError) {
-    return NextResponse.json({ code: 'DB_ERROR', message: 'Database error — your contract was not saved.' }, { status: 500 })
+    console.error('[upload] contracts insert failed:', dbError)
+    return NextResponse.json({ code: 'DB_ERROR', message: `Database error — your contract was not saved. (${dbError.message})` }, { status: 500 })
   }
 
   // Non-blocking Storage upload
@@ -70,11 +71,11 @@ export const POST = withAuth(async (req: NextRequest, user) => {
     try {
       const sanitized = file.name.toLowerCase().replace(/[^a-z0-9.]/g, '-')
       const storagePath = `contracts/${user.id}/${contractId}/${sanitized}`
-      const { error } = await admin.storage
+      const { error } = await supabase.storage
         .from('contracts')
         .upload(storagePath, buffer, { contentType: 'application/pdf' })
       if (!error) {
-        await admin.from('contracts').update({ file_path: storagePath }).eq('id', contractId)
+        await supabase.from('contracts').update({ file_path: storagePath }).eq('id', contractId)
       }
     } catch (err) {
       console.error('[storage-upload] non-blocking upload failed:', err)

@@ -4,7 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import type { DashboardContract } from '@/types'
 
 export const GET = withAuth(async (_req: NextRequest, user) => {
-  const supabase = createServerSupabaseClient()
+  const supabase = await createServerSupabaseClient()
 
   const { data: contracts } = await supabase
     .from('contracts')

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware/auth'
-import { createAdminSupabaseClient, createServerSupabaseClient } from '@/lib/supabase/server'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { UpdateKeyTermSchema } from '@/lib/validation/schemas'
 
-export const PATCH = withAuth(async (req: NextRequest, user, { params }: { params: { id: string } }) => {
+export const PATCH = withAuth(async (req: NextRequest, user, { params }) => {
   const termId = params.id
   const body = await req.json()
   const parsed = UpdateKeyTermSchema.safeParse(body)
@@ -12,8 +12,7 @@ export const PATCH = withAuth(async (req: NextRequest, user, { params }: { param
     return NextResponse.json({ message: parsed.error.errors[0].message }, { status: 400 })
   }
 
-  const supabase = createServerSupabaseClient()
-  const admin = createAdminSupabaseClient()
+  const supabase = await createServerSupabaseClient()
 
   const { data: term, error } = await supabase
     .from('key_terms')
@@ -38,7 +37,7 @@ export const PATCH = withAuth(async (req: NextRequest, user, { params }: { param
     updatePayload.original_value = term.value
   }
 
-  const { data: updated, error: updateError } = await admin
+  const { data: updated, error: updateError } = await supabase
     .from('key_terms')
     .update(updatePayload)
     .eq('id', termId)

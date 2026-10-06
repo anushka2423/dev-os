@@ -12,7 +12,7 @@ const config: Record<ContractStatus, { bg: string; text: string; label: string }
 }
 
 export default function StatusBadge({ status }: StatusBadgeProps) {
-  const { bg, text, label } = config[status]
+  const { bg, text, label } = config[status] ?? { bg: 'bg-gray-100', text: 'text-gray-600', label: status ?? 'Unknown' }
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${bg} ${text}`}>
       {status === 'processing' && (

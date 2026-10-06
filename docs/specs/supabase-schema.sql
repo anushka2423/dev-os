@@ -204,7 +204,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   user_id       UUID        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   role          TEXT        NOT NULL CHECK (role IN ('user', 'assistant')),
   content       TEXT        NOT NULL,
-  page_citation INTEGER     NULL,       -- page number from [Page X] in assistant response
+  page_citations INTEGER[]  NOT NULL DEFAULT '{}',  -- page numbers from [Page X] citations in assistant response
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware/auth'
-import { createAdminSupabaseClient, createServerSupabaseClient } from '@/lib/supabase/server'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { extractKeyTerms } from '@/lib/openai/extract'
 
 const MAX_TOKENS = parseInt(process.env.MAX_CONTRACT_TOKENS ?? '15000', 10)
 
-export const POST = withAuth(async (req: NextRequest, user, { params }: { params: { id: string } }) => {
+export const POST = withAuth(async (req: NextRequest, user, { params }) => {
   const contractId = params.id
-  const supabase = createServerSupabaseClient()
-  const admin = createAdminSupabaseClient()
+  const supabase = await createServerSupabaseClient()
 
   const { data: contract, error } = await supabase
     .from('contracts')
@@ -31,7 +30,7 @@ export const POST = withAuth(async (req: NextRequest, user, { params }: { params
     return NextResponse.json({ code: 'CONTRACT_TOO_LONG', message: 'Contract exceeds the 15,000-token limit.' }, { status: 422 })
   }
 
-  await admin.from('contracts').update({ status: 'processing' }).eq('id', contractId)
+  await supabase.from('contracts').update({ status: 'processing' }).eq('id', contractId)
 
   const { data: customTermRows } = await supabase
     .from('custom_key_terms')
@@ -45,7 +44,7 @@ export const POST = withAuth(async (req: NextRequest, user, { params }: { params
   try {
     keyTermResults = await extractKeyTerms(contract.contract_text, contract.contract_type, customTermNames)
   } catch (err: unknown) {
-    await admin.from('contracts').update({ status: 'error' }).eq('id', contractId)
+    await supabase.from('contracts').update({ status: 'error' }).eq('id', contractId)
     const code = (err as { code?: string }).code === 'AI_PARSE_FAILED' ? 'AI_PARSE_FAILED' : 'AI_UNAVAILABLE'
     const status = code === 'AI_PARSE_FAILED' ? 502 : 503
     return NextResponse.json({ code, message: 'AI extraction failed. Your document is saved — please retry.' }, { status })
@@ -63,10 +62,10 @@ export const POST = withAuth(async (req: NextRequest, user, { params }: { params
     is_edited: false,
   }))
 
-  await admin.from('key_terms').insert(rows)
-  await admin.from('contracts').update({ status: 'processed' }).eq('id', contractId)
+  await supabase.from('key_terms').insert(rows)
+  await supabase.from('contracts').update({ status: 'processed' }).eq('id', contractId)
 
-  const { data: inserted } = await admin.from('key_terms').select('*').eq('contract_id', contractId)
+  const { data: inserted } = await supabase.from('key_terms').select('*').eq('contract_id', contractId)
 
   return NextResponse.json({
     contract_id: contractId,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { useContract } from '@/hooks/use-contract'
 import ResultsHeader from '@/components/contracts/results-header'
@@ -21,9 +21,11 @@ export default function ContractResultsPage() {
   const [usePdfViewer, setUsePdfViewer] = useState(true)
 
   // Sync keyTerms when SWR loads
-  if (initialTerms.length > 0 && keyTerms.length === 0) {
-    setKeyTerms(initialTerms)
-  }
+  useEffect(() => {
+    if (initialTerms.length > 0) {
+      setKeyTerms(initialTerms)
+    }
+  }, [initialTerms])
 
   function handleTermUpdated(updated: Pick<KeyTerm, 'id' | 'value' | 'original_value' | 'is_edited'>) {
     setKeyTerms((prev) => prev.map((t) => (t.id === updated.id ? { ...t, ...updated } : t)))

@@ -7,7 +7,7 @@ import EmptyDashboard from '@/components/dashboard/empty-dashboard'
 import type { DashboardContract, GetDashboardResponse } from '@/types'
 
 async function getDashboardData(userId: string): Promise<GetDashboardResponse> {
-  const supabase = createServerSupabaseClient()
+  const supabase = await createServerSupabaseClient()
 
   const { data: contracts } = await supabase
     .from('contracts')
@@ -21,7 +21,7 @@ async function getDashboardData(userId: string): Promise<GetDashboardResponse> {
     .eq('user_id', userId)
 
   const countMap: Record<string, number> = {}
-  termCounts?.forEach((r) => {
+  termCounts?.forEach((r: { contract_id: string }) => {
     countMap[r.contract_id] = (countMap[r.contract_id] ?? 0) + 1
   })
 
@@ -41,7 +41,7 @@ async function getDashboardData(userId: string): Promise<GetDashboardResponse> {
 }
 
 export default async function DashboardPage() {
-  const supabase = createServerSupabaseClient()
+  const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   const { contracts, stats } = await getDashboardData(user!.id)
 

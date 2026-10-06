@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware/auth'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
-export const GET = withAuth(async (_req: NextRequest, user, { params }: { params: { id: string } }) => {
-  const supabase = createServerSupabaseClient()
+export const GET = withAuth(async (_req: NextRequest, user, { params }) => {
+  const supabase = await createServerSupabaseClient()
 
   const { data: contract, error } = await supabase
     .from('contracts')

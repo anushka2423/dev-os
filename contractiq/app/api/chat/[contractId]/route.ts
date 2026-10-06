@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth } from '@/lib/middleware/auth'
-import { createAdminSupabaseClient, createServerSupabaseClient } from '@/lib/supabase/server'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { sendChatMessage } from '@/lib/openai/chat'
 import { SendChatMessageSchema } from '@/lib/validation/schemas'
 
-export const POST = withAuth(async (req: NextRequest, user, { params }: { params: { contractId: string } }) => {
+export const POST = withAuth(async (req: NextRequest, user, { params }) => {
   const contractId = params.contractId
   const body = await req.json()
   const parsed = SendChatMessageSchema.safeParse(body)
@@ -14,8 +14,7 @@ export const POST = withAuth(async (req: NextRequest, user, { params }: { params
   }
 
   const { session_id: sessionId, message } = parsed.data
-  const supabase = createServerSupabaseClient()
-  const admin = createAdminSupabaseClient()
+  const supabase = await createServerSupabaseClient()
 
   const { data: session, error: sessionError } = await supabase
     .from('chat_sessions')
@@ -57,7 +56,7 @@ export const POST = withAuth(async (req: NextRequest, user, { params }: { params
   }
 
   const messageId = crypto.randomUUID()
-  await admin.from('chat_messages').insert([
+  await supabase.from('chat_messages').insert([
     { session_id: sessionId, user_id: user.id, role: 'user', content: message, page_citations: [] },
     { id: messageId, session_id: sessionId, user_id: user.id, role: 'assistant', content: result.content, page_citations: result.pageCitations },
   ])
@@ -71,7 +70,7 @@ export const POST = withAuth(async (req: NextRequest, user, { params }: { params
   })
 })
 
-export const GET = withAuth(async (req: NextRequest, user, { params }: { params: { contractId: string } }) => {
+export const GET = withAuth(async (req: NextRequest, user, { params }) => {
   const contractId = params.contractId
   const sessionId = req.nextUrl.searchParams.get('session_id')
 
@@ -79,7 +78,7 @@ export const GET = withAuth(async (req: NextRequest, user, { params }: { params:
     return NextResponse.json({ message: 'session_id is required.' }, { status: 400 })
   }
 
-  const supabase = createServerSupabaseClient()
+  const supabase = await createServerSupabaseClient()
 
   const { data: session } = await supabase
     .from('chat_sessions')
